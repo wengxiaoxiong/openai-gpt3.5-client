@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+<!--  引入Vue-->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<!--  引入axios-->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<!--    美化页面-->
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <style>
+
+        @media screen and (max-width: 768px) {
+            .container {
+                width: 100%;
+            }
+        }
+        body{
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+        }
+        #app{
+            display: flex;
+            flex-direction: column;
+            width: 900px;
+            
+
+        }
+        input{
+            margin: 10px 0;
+        /*    居中*/
+            text-align: center;
+        }
+        #input{
+            /* 自动换行 */
+            white-space: pre-wrap;
+            height: 100px;
+        }
+        #output{
+
+            height: 300px;
+        }
+        .message_container{
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 100%;
+
+            overflow: auto;
+
+        }
+        .message{
+            /* display: flex; */
+            flex-direction: row;
+            align-items: flex-start;
+            width: 100%;
+            /* background-color: blue; */
+            margin: 10px 0px;
+        }
+        .message_role_user
+        {
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            padding: 5px;
+            margin: 5px;
+            text-align: center;
+            width: 80px;
+            background-color: aquamarine;
+        }
+        .message_role_ai
+        {
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            padding: 5px;
+            margin: 5px;
+            text-align: center;
+            width: 80px;
+            background-color: rosybrown;
+        }
+        .message_content
+        {
+            /* 支持行满自动换行，然后文字可能带有回车，开头不需要空格 */
+            white-space: pre-wrap;
+            text-indent: 0;
+
+        }
+    </style>
+
+</head>
+<body>
+    <div id="app">
+
+        
+        <h1 v-if="message_container.length>0" >聊天记录</h1>
+        <div class="message_container">
+            <div class="message" v-for="message in message_container">
+                <div class="message_role_user" v-if="message.role==='user'" >
+                    用户
+                </div>  
+                <div class="message_role_ai" v-else>
+                    gpt-3.5
+                </div>
+                <div class="message_content">
+                    {{message.content}}
+                </div>
+            </div>
+        </div>
+            
+
+        <h1>GPT3.5-turbo</h1>
+        <h2>请输入文字</h2>
+
+        <input id="input"  type="textarea" v-model="input_string">
+<!--        api-key input-->
+        <h3>请输入API-KEY</h3>
+        <input type="password" v-model="api_key">
+        <button type="button" class="btn btn-primary" @click="send">发送</button>
+    </div>
+</body>
+<script>
+
+    var app = new Vue({
+        el: '#app',
+        data: {
+            input_string: '',
+            api_key: '',
+            message_container: [],
+
+        },
+        // lorem    
+        methods: {
+            send: function () {
+                that = this;
+                tmp_message = { role: 'user', content: that.input_string };
+                that.message_container.push(tmp_message);
+                console.log(that.message_container)
+                axios.post("https://api.openai.com/v1/chat/completions", {
+                    model: 'gpt-3.5-turbo',
+                    messages: that.message_container
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${that.api_key}`,
+                        'Content-Type': 'application/json',
+                    },
+                })
+                    .then((response) => {
+                        console.log(response);
+                        console.log(response.data.choices[0].message.content);
+                        string_result = response.data.choices[0].message.content;
+                        // 如果第一行是\n则删除\n
+                        if (string_result[0] === '\n') {
+                            string_result = string_result.slice(1);
+                        }
+                        tmp_message = { role: response.data.choices[0].message.role, content: string_result };
+                        that.message_container.push(tmp_message);
+                        // 滑到页面的底部
+                        var message_container = document.getElementsByClassName("message_container")[0];
+                        message_container.scrollTop = message_container.scrollHeight;
+                        // 清空输入框
+                        that.input_string = '';
+
+
+                    })
+                    .catch((error) => {
+                        console.error(error);
+                    });
+
+            }
+        }
+    })
+
+</script>
+</html>
