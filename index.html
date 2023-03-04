@@ -2,15 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-<!--  引入Vue-->
+    <title>ChatGPT个人版</title>
+    <!--  引入Vue-->
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-<!--  引入axios-->
+    <!--  引入axios-->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<!--    美化页面-->
+    <!--    美化页面-->
     <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
     <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
     <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <!-- markdown  -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
     <style>
 
         @media screen and (max-width: 768px) {
@@ -22,12 +26,14 @@
             background-color: #f5f5f5;
             display: flex;
             justify-content: center;
+            
+
         }
         #app{
             display: flex;
             flex-direction: column;
-            width: 900px;
-            
+            width: 50%;
+            min-width: 400px;
 
         }
         input{
@@ -60,42 +66,63 @@
             width: 100%;
             /* background-color: blue; */
             margin: 10px 0px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 10px;
         }
         .message_role_user
         {
-            background-color: #f5f5f5;
             border-radius: 5px;
             padding: 5px;
-            margin: 5px;
+            color: white;
             text-align: center;
             width: 80px;
-            background-color: aquamarine;
+            background-color: #366ef4;
         }
         .message_role_ai
         {
-            background-color: #f5f5f5;
+
             border-radius: 5px;
             padding: 5px;
-            margin: 5px;
             text-align: center;
             width: 80px;
-            background-color: rosybrown;
+            color: white;
+            background-color: #f6685d;
         }
         .message_content
         {
             /* 支持行满自动换行，然后文字可能带有回车，开头不需要空格 */
-            white-space: pre-wrap;
-            text-indent: 0;
+            /* white-space: pre-wrap; */
+            margin: 20px 0;
 
         }
+        .information{
+            width: 100%;
+            
+            display: flex;
+            justify-content: space-evenly;
+            margin: 30px 0;
+
+        }
+        .text{
+            margin: 14px 0;
+        }
+        .top
+        {
+            margin-top: 80px;
+        }
+
+
     </style>
 
 </head>
 <body>
     <div id="app">
 
+        <h1 class="top"  v-if="message_container.length>0">聊天记录</h1>
         
-        <h1 v-if="message_container.length>0" >聊天记录</h1>
+        <!-- 下载聊天记录，从message_container -->
+        
         <div class="message_container">
             <div class="message" v-for="message in message_container">
                 <div class="message_role_user" v-if="message.role==='user'" >
@@ -104,21 +131,48 @@
                 <div class="message_role_ai" v-else>
                     gpt-3.5
                 </div>
-                <div class="message_content">
+                <div class="message_content"  v-if="message.role==='user'">
                     {{message.content}}
+                </div>
+                <div class="message_content" v-else v-html="peocessMarkdown(message.content)">
+
                 </div>
             </div>
         </div>
-            
+        <!-- 下载聊天记录按钮 -->
+        <button class="btn btn-primary" v-if="message_container.length>0" @click="downloadChatRecord">下载聊天记录</button>
 
-        <h1>GPT3.5-turbo</h1>
+        <h2 class="top">GPT3.5-turbo API调用界面</h1>
+        <h2 v-if="message_container.length==0">使用说明</h2>
+        <div class="introduction" v-if="message_container.length==0">
+            <!-- 1. 本页面使用的是GPT3.5-turbo模型，是GPT3的一个子集，可以在一定程度上提高速度。
+            2. 本页面使用的是OpenAI的API，需要注册账号，然后在设置中获取API-KEY。
+            3. 本页面仅仅只是一个简单的调用界面，所以说如果您的网络环境无法调用OpenAI的API，那么本页面也无法使用。 -->
+
+            <!-- 子div，包含文字 -->
+            <div class="text">1. 作者B站:<a href="https://space.bilibili.com/25484432" target="_blank" >熊老板i</a>，欢迎交流想法</div>
+            <div class="text">2. 我们的网站调用的是GPT3.5-turbo开放接口，因此需要您提供自己的API-KEY，才能够正常使用网站的功能。如果你没有API-KEY，需要自己注册OpenAI账号，然后在设置中获取API-KEY。</div>
+            <div class="text">3. 本页面仅仅只是一个简单的调用界面，所以说如果您的网络环境无法调用OpenAI的API，那么本页面也无法使用。</div>
+            <div class="text">4. 我们希望您能够在使用我们的网站时遵守相关法律法规，不要使用网站进行任何违法行为。</div>
+            <div class="text">5. 如果您在中国境内，可能无法正常使用网站的功能</div>
+            <div class="text">6. Enter发送已关闭，你可以放心的换行</div>
+            <div class="text">7. 开放下载聊天记录</div>
+
+        </div>
         <h2>请输入文字</h2>
 
-        <input id="input"  type="textarea" v-model="input_string">
+        <!-- <input id="input"  type="text" v-model="input_string"> -->
+        <textarea name="" id="input" v-model="input_string" cols="30" rows="10"></textarea>
 <!--        api-key input-->
         <h3>请输入API-KEY</h3>
         <input type="password" v-model="api_key">
-        <button type="button" class="btn btn-primary" @click="send">发送</button>
+        <button type="button" id="sendBtn" class="btn btn-primary" @click="send">发送</button>
+        <div class="information">
+            <p>备案号：<a href="https://beian.miit.gov.cn/">沪ICP备2022033549号-1</a></p>
+            <p>界面:<a href="https://www.github.com/wengxiaoxiong/" target="_blank" >熊老闆i</a></p>
+            <p>B站:<a href="https://space.bilibili.com/25484432" target="_blank" >熊老闆i</a></p>
+
+        </div>
     </div>
 </body>
 <script>
@@ -127,17 +181,34 @@
         el: '#app',
         data: {
             input_string: '',
-            api_key: '',
-            message_container: [],
+            api_key: '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',
+            message_container: [
+            ],
 
         },
         // lorem    
         methods: {
             send: function () {
                 that = this;
+                console.log(that.message_container)
+                if (that.input_string[0] === '\n' || that.input_string[1] === '\t') {
+                    that.input_string = that.input_string.slice(1);
+                }
+                // 输入为空
+                if (that.input_string === '') {
+                    alert("输入不能为空");
+                    return;
+                }
                 tmp_message = { role: 'user', content: that.input_string };
                 that.message_container.push(tmp_message);
-                console.log(that.message_container)
+
+                // 清空输入框
+                that.input_string = '';
+                // 禁用按钮
+                document.getElementById("sendBtn").disabled = true;
+                // 修改文字
+                document.getElementById("sendBtn").innerText = "发送中";
+
                 axios.post("https://api.openai.com/v1/chat/completions", {
                     model: 'gpt-3.5-turbo',
                     messages: that.message_container
@@ -151,7 +222,6 @@
                         console.log(response);
                         console.log(response.data.choices[0].message.content);
                         string_result = response.data.choices[0].message.content;
-                        // 如果第一行是\n则删除\n
                         if (string_result[0] === '\n') {
                             string_result = string_result.slice(1);
                         }
@@ -160,18 +230,87 @@
                         // 滑到页面的底部
                         var message_container = document.getElementsByClassName("message_container")[0];
                         message_container.scrollTop = message_container.scrollHeight;
-                        // 清空输入框
-                        that.input_string = '';
+                        // 启用按钮
+                        document.getElementById("sendBtn").disabled = false;
+                        // 修改文字
+                        document.getElementById("sendBtn").innerText = "发送";
+
 
 
                     })
                     .catch((error) => {
                         console.error(error);
+                        alert("发送失败，请检查API-KEY是否正确，或者稍后再试，也有可能是网络问题，在中国大陆网络环境可能无法使用")
+                        // 启用按钮
+                        document.getElementById("sendBtn").disabled = false;
+                        // 修改文字
+                        document.getElementById("sendBtn").innerText = "发送";
+                        // 删除最后一条消息
+                        that.message_container.pop();
                     });
 
+            },
+            peocessMarkdown: function (string) {
+
+                string = string.replace(/```(\w+)?([\s\S]*?)```/g, function(match, lang, code){
+                // 将代码块内的特殊字符进行编码
+                code = code.replace(/</g, "&lt;");
+                code = code.replace(/>/g, "&gt;");
+                code = code.replace(/"/g, "&quot;");
+                code = code.replace(/'/g, "&#39;");
+                
+                // 如果指定了语言种类，则添加class标识
+                var language = "";
+                if (lang) {
+                    language = ' class="language-' + lang + '"';
+                }
+                
+                return "<pre><code" + language + ">" + code + "</code></pre>";
+                });
+                
+
+                // 1. 处理换行
+                string = string.replace(/\n/g, "<br>");
+                // 2. 处理粗体
+                string = string.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+                // 3. 处理斜体
+                string = string.replace(/\*(.*?)\*/g, "<i>$1</i>");
+                // 4. 处理链接
+                string = string.replace(/\[(.*?)\]\((.*?)\)/g, "<a href='$2'>$1</a>");
+                // 5. 处理图片
+                string = string.replace(/\!\[(.*?)\]\((.*?)\)/g, "<img src='$2' alt='$1'>");
+
+                // 7.处理表格
+                string = string.replace(/\|(.*)\|/g, "<tr><td>$1</td></tr>");
+
+
+
+                
+
+                return string;
+            },
+            jsonString: function(obj){
+                // 将[{},{},{}]转换为用户可读的字符串，obj[i].content可能带有"\n"，然后role用中文来表示
+                var string = "";
+                for (var i = 0; i < obj.length; i++) {
+                    if (obj[i].role === "user") {
+                        string += "用户：" + obj[i].content + "\n\n";
+                    } else {
+                        string += "机器人：" + obj[i].content + "\n\n";
+                    }
+                }
+                return string;
+            },
+            // downloadChatRecord
+            downloadChatRecord: function () {
+                that = this;
+                var blob = new Blob([that.jsonString(that.message_container)], { type: "text/plain;charset=utf-8" });
+                //var filename = 聊天记录-年月日时分秒
+                var filename = "GPT聊天记录 网站:gpt.wengxiaoxiong.com" + new Date().toLocaleDateString() + "-" + new Date().toLocaleTimeString() + ".txt";
+                saveAs(blob, filename);
             }
         }
-    })
+    });
 
 </script>
 </html>
