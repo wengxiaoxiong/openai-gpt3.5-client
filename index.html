@@ -11,23 +11,17 @@
     <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
     <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
     <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <!-- markdown  -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
-    <style>
 
-        @media screen and (max-width: 768px) {
-            .container {
-                width: 100%;
-            }
-        }
+    <!--  引入文件下载 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+    <!--  手机端适配 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
         body{
             background-color: #f5f5f5;
             display: flex;
             justify-content: center;
-            
-
         }
         #app{
             display: flex;
@@ -36,40 +30,52 @@
             min-width: 400px;
 
         }
+        /* 说明 */
+        .text{
+            margin: 14px 0;
+        }
+        /* 页面顶部 */
+        .top
+        {
+            margin-top: 30px;
+        }
+        /* APIKEY */
         input{
             margin: 10px 0;
-        /*    居中*/
             text-align: center;
         }
+        /* prompt */
         #input{
-            /* 自动换行 */
             white-space: pre-wrap;
+            min-height: 100px;
             height: 100px;
+            max-width: 100%;
+            min-width: 100%;
         }
         #output{
 
             height: 300px;
         }
+        /* 消息容器 */
         .message_container{
             display: flex;
             flex-direction: column;
             align-items: flex-start;
             width: 100%;
-
             overflow: auto;
 
         }
+        /* 一条消息 */
         .message{
-            /* display: flex; */
             flex-direction: row;
             align-items: flex-start;
             width: 100%;
-            /* background-color: blue; */
             margin: 10px 0px;
             padding: 10px;
             background-color: #fff;
             border-radius: 10px;
         }
+        /* 用户角色标签 */
         .message_role_user
         {
             border-radius: 5px;
@@ -79,6 +85,7 @@
             width: 80px;
             background-color: #366ef4;
         }
+        /* AI角色标签 */
         .message_role_ai
         {
 
@@ -89,28 +96,22 @@
             color: white;
             background-color: #f6685d;
         }
+        /* 消息内容 */
         .message_content
         {
-            /* 支持行满自动换行，然后文字可能带有回车，开头不需要空格 */
-            /* white-space: pre-wrap; */
             margin: 20px 0;
 
         }
+        /* 页面底部信息 */
         .information{
             width: 100%;
-            
             display: flex;
             justify-content: space-evenly;
             margin: 30px 0;
 
         }
-        .text{
-            margin: 14px 0;
-        }
-        .top
-        {
-            margin-top: 80px;
-        }
+
+
 
 
     </style>
@@ -131,8 +132,8 @@
                 <div class="message_role_ai" v-else>
                     gpt-3.5
                 </div>
-                <div class="message_content"  v-if="message.role==='user'">
-                    {{message.content}}
+                <div class="message_content"  v-if="message.role==='user'" v-html="peocessMarkdownUser(message.content)">
+                    
                 </div>
                 <div class="message_content" v-else v-html="peocessMarkdown(message.content)">
 
@@ -140,8 +141,12 @@
             </div>
         </div>
         <!-- 下载聊天记录按钮 -->
-        <button class="btn btn-primary" v-if="message_container.length>0" @click="downloadChatRecord">下载聊天记录</button>
-
+        <!--  -->
+        <!-- 一行两个按钮 -->
+        <div class="information" v-if="message_container.length>0">
+            <button class="btn btn-primary" @click="downloadChatRecordTxt">下载.txt聊天记录</button>
+            <button class="btn btn-primary"  @click="downloadChatRecordMd">下载.md聊天记录</button>
+            </div>
         <h2 class="top">GPT3.5-turbo API调用界面</h1>
         <h2 v-if="message_container.length==0">使用说明</h2>
         <div class="introduction" v-if="message_container.length==0">
@@ -156,7 +161,7 @@
             <div class="text">4. 我们希望您能够在使用我们的网站时遵守相关法律法规，不要使用网站进行任何违法行为。</div>
             <div class="text">5. 如果您在中国境内，可能无法正常使用网站的功能</div>
             <div class="text">6. Enter发送已关闭，你可以放心的换行</div>
-            <div class="text">7. 开放下载聊天记录</div>
+            <div class="text">7. 开放下载天记录，支持Markdown和txt</div>
 
         </div>
         <h2>请输入文字</h2>
@@ -173,6 +178,7 @@
             <p>B站:<a href="https://space.bilibili.com/25484432" target="_blank" >熊老闆i</a></p>
 
         </div>
+
     </div>
 </body>
 <script>
@@ -181,7 +187,7 @@
         el: '#app',
         data: {
             input_string: '',
-            api_key: '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',
+            api_key: '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',
             message_container: [
             ],
 
@@ -235,8 +241,6 @@
                         // 修改文字
                         document.getElementById("sendBtn").innerText = "发送";
 
-
-
                     })
                     .catch((error) => {
                         console.error(error);
@@ -250,22 +254,41 @@
                     });
 
             },
+            peocessMarkdownUser:function(string){
+               
+                
+                // 1.处理 < > /
+                string = string.replace(/</g, "&lt;");
+                string = string.replace(/>/g, "&gt;");
+                string = string.replace(/\//g, "&#47;");
+
+                 // 2. 处理换行
+                string = string.replace(/\n/g, "<br>");
+                // 3. 处理粗体
+
+                return string;
+            },
             peocessMarkdown: function (string) {
 
-                string = string.replace(/```(\w+)?([\s\S]*?)```/g, function(match, lang, code){
+                // 处理 < > /
+                string = string.replace(/</g, "&lt;");
+                string = string.replace(/>/g, "&gt;");
+                string = string.replace(/\//g, "&#47;");
+                
                 // 将代码块内的特殊字符进行编码
-                code = code.replace(/</g, "&lt;");
-                code = code.replace(/>/g, "&gt;");
-                code = code.replace(/"/g, "&quot;");
-                code = code.replace(/'/g, "&#39;");
-                
-                // 如果指定了语言种类，则添加class标识
-                var language = "";
-                if (lang) {
-                    language = ' class="language-' + lang + '"';
-                }
-                
-                return "<pre><code" + language + ">" + code + "</code></pre>";
+                string = string.replace(/```(\w+)?([\s\S]*?)```/g, function(match, lang, code){
+                    code = code.replace(/</g, "&lt;");
+                    code = code.replace(/>/g, "&gt;");
+                    code = code.replace(/"/g, "&quot;");
+                    code = code.replace(/'/g, "&#39;");
+                    
+                    var language = "";
+                    if (lang) {
+                        language = ' class="language-' + lang + '"';
+                    }
+                    
+                    // return "<pre><code" + language + ">" + code + "</code></pre>";
+                    return "<pre><code" + language + ">" + code + "</code></pre>";
                 });
                 
 
@@ -283,15 +306,14 @@
                 // 7.处理表格
                 string = string.replace(/\|(.*)\|/g, "<tr><td>$1</td></tr>");
 
-
-
-                
-
                 return string;
             },
-            jsonString: function(obj){
+            // 转换为TXT
+            toTxt: function(obj){
                 // 将[{},{},{}]转换为用户可读的字符串，obj[i].content可能带有"\n"，然后role用中文来表示
                 var string = "";
+                string += "# 聊天记录\n\n时间：" + new Date().toLocaleDateString() + "-" + new Date().toLocaleTimeString()
+                string += "\n\n地址：http://gpt.wengxiaoxiong.com/\n\n"
                 for (var i = 0; i < obj.length; i++) {
                     if (obj[i].role === "user") {
                         string += "用户：" + obj[i].content + "\n\n";
@@ -301,14 +323,39 @@
                 }
                 return string;
             },
-            // downloadChatRecord
-            downloadChatRecord: function () {
-                that = this;
-                var blob = new Blob([that.jsonString(that.message_container)], { type: "text/plain;charset=utf-8" });
+            // 转换为Markdown
+            toMarkdown: function(obj){
+                // 将[{},{},{}]转换为用户可读的字符串，obj[i].content可能带有"\n"，然后role用中文来表示
+                var string = "";
+                string += "# 聊天记录\n\n时间：" + new Date().toLocaleDateString() + "-" + new Date().toLocaleTimeString()
+                string += "\n\n地址：http://gpt.wengxiaoxiong.com/\n\n"
+                for (var i = 0; i < obj.length; i++) {
+                    if (obj[i].role === "user") {
+                        string += "## 用户\n\n" + obj[i].content + "\n\n";
+                    } else {
+                        string += "## 机器人\n\n" + obj[i].content + "\n\n";
+                    }
+                }
+                return string;
+            },
+            // 下载聊天记录
+            downloadChatRecordMd: function () {
+                var that = this;
+                // markdown
+                var blob = new Blob([that.toMarkdown(that.message_container)], { type: "text/plain;charset=utf-8" });
                 //var filename = 聊天记录-年月日时分秒
-                var filename = "GPT聊天记录 网站:gpt.wengxiaoxiong.com" + new Date().toLocaleDateString() + "-" + new Date().toLocaleTimeString() + ".txt";
+                var filename = "聊天记录" + new Date().toLocaleDateString() + "-" + new Date().toLocaleTimeString() + ".md";
                 saveAs(blob, filename);
-            }
+                
+            },
+            downloadChatRecordTxt: function () {
+                var that = this;
+                // txt
+                var blob = new Blob([that.toTxt(that.message_container)], { type: "text/plain;charset=utf-8" });
+                //var filename = 聊天记录-年月日时分秒
+                var filename = "聊天记录" + new Date().toLocaleDateString() + "-" + new Date().toLocaleTimeString() + ".txt";
+                saveAs(blob, filename);
+            },
         }
     });
 
